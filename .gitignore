@@ -1,0 +1,6 @@
+internal/test/testdata.json
+.env
+/bin
+.vscode
+cover.out
+build

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aad-finout-sync
+  name: aad-finout-sync
+  namespace: $(kubernetes-namespace)
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aad-finout-sync
+  template:
+    metadata:
+      labels:
+        app: aad-finout-sync
+    spec:
+      serviceAccountName: aad-finout-sync
+      containers:
+      - image: dfdsdk/aadawssync:v0.0.15
+        name: aad-finout-sync
+        imagePullPolicy: Always
+        env:
+        - name: AAS_SCHEDULER_FREQUENCY
+          value: 5m
+        - name: AAS_SCHEDULER_ENABLECAPSVC2AZURE
+          value: "true"
+        - name: AAS_SCHEDULER_ENABLEAZURE2AWS
+          value: "true"
+        - name: AAS_SCHEDULER_ENABLEAWSMAPPING
+          value: "true"
+        - name: AAS_SCHEDULER_ENABLEAWS2K8S
+          value: "true"
+        - name: AAS_LOG_LEVEL
+          value: info
+        - name: AAS_AWS_SSOREGION
+          value: eu-west-1
+        - name: GIN_MODE
+          value: release
+        - name: AAS_EVENTHANDLING_ENABLED
+          value: "true"
+        envFrom:
+          - secretRef:
+              name: aad-finout-sync
+              optional: false

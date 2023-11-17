@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      aadawssync:
+        aliases:
+          - aadfinoutsync
+    ports:
+      - "8080:8080"
+
+networks:
+  aadfinoutsync:
