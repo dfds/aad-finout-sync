@@ -121,7 +121,7 @@ func (a *AuthUser) verifyMfa(mfaToken string) (*VerifyMfaResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "finout-data-collector - github.com/dfds/finout-data-collector")
+	req.Header.Set("User-Agent", "aad-finout-sync - github.com/dfds/aad-finout-sync")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -159,7 +159,7 @@ func (a *AuthUser) login() (*UserLoginResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "finout-data-collector - github.com/dfds/finout-data-collector")
+	req.Header.Set("User-Agent", "aad-finout-sync - github.com/dfds/aad-finout-sync")
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)

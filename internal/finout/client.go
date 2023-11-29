@@ -46,7 +46,7 @@ func (c *Client) prepareHttpRequest(h *http.Request) error {
 		return err
 	}
 
-	h.Header.Set("User-Agent", "finout-data-collector - github.com/dfds/finout-data-collector")
+	h.Header.Set("User-Agent", "aad-finout-sync - github.com/dfds/aad-finout-sync")
 	requestId, err := uuid.NewUUID()
 	if err != nil {
 		return err
