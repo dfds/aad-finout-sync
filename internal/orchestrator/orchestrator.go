@@ -17,6 +17,7 @@ import (
 )
 
 const AzureAdToFinoutName = "aadToFinout"
+const CostCentreToFinoutName = "costCentreToFinout"
 
 var currentJobsGauge prometheus.Gauge = promauto.NewGauge(prometheus.GaugeOpts{
 	Name:      "jobs_running",
@@ -45,10 +46,11 @@ var jobSuccessfulCount *prometheus.GaugeVec = promauto.NewGaugeVec(prometheus.Ga
 // Orchestrator
 // Used for managing long-lived fully fledged sync jobs
 type Orchestrator struct {
-	aadToFinoutSyncStatus *SyncStatus
-	Jobs                  map[string]*Job
-	ctx                   context.Context
-	wg                    *sync.WaitGroup
+	aadToFinoutSyncStatus        *SyncStatus
+	costCentreToFinoutSyncStatus *SyncStatus
+	Jobs                         map[string]*Job
+	ctx                          context.Context
+	wg                           *sync.WaitGroup
 }
 
 type SyncStatus struct {
@@ -70,10 +72,11 @@ func (s *SyncStatus) SetStatus(status bool) {
 
 func NewOrchestrator(ctx context.Context, wg *sync.WaitGroup) *Orchestrator {
 	return &Orchestrator{
-		aadToFinoutSyncStatus: &SyncStatus{active: false},
-		Jobs:                  map[string]*Job{},
-		ctx:                   ctx,
-		wg:                    wg,
+		aadToFinoutSyncStatus:        &SyncStatus{active: false},
+		costCentreToFinoutSyncStatus: &SyncStatus{active: false},
+		Jobs:                         map[string]*Job{},
+		ctx:                          ctx,
+		wg:                           wg,
 	}
 }
 
@@ -85,6 +88,15 @@ func (o *Orchestrator) Init(conf config.Config) {
 		wg:              o.wg,
 		handler:         handler.Azure2FinoutHandler,
 		ScheduleEnabled: conf.Scheduler.EnableAzure2Finout,
+	}
+
+	o.Jobs[CostCentreToFinoutName] = &Job{
+		Name:            CostCentreToFinoutName,
+		Status:          o.costCentreToFinoutSyncStatus,
+		context:         o.ctx,
+		wg:              o.wg,
+		handler:         handler.CostCentre2FinoutHandler,
+		ScheduleEnabled: conf.Scheduler.EnableCostCentre2Finout,
 	}
 }
 

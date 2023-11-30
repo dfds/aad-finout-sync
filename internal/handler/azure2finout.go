@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/finout"
 )
@@ -15,17 +14,17 @@ func Azure2FinoutHandler(ctx context.Context) error {
 		return err
 	}
 
-	finoutClientAuth := finout.NewFinoutClient()
+	//finoutClientAuth := finout.NewFinoutClient()
 	finoutClientApp := finout.NewFinoutClient()
-	finoutClientAuth.SetAuthMethod(finout.AuthUserMethod(conf.Finout.Username, conf.Finout.Password, &conf.Finout.MfaUrl))
+	//finoutClientAuth.SetAuthMethod(finout.AuthUserMethod(conf.Finout.Username, conf.Finout.Password, &conf.Finout.MfaUrl))
 	finoutClientApp.SetAuthMethod(finout.AuthClientSecretMethod(finout.Config{ClientId: conf.Finout.ClientId, ClientSecret: conf.Finout.ClientSecret}))
 
-	authGroups, err := finoutClientAuth.ApiAuth().ListGroups(ctx)
+	tags, err := finoutClientApp.ApiApp().ListViews(ctx)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(authGroups)
+	tags.GetByName("dfds.cost.centre")
 
 	return nil
 

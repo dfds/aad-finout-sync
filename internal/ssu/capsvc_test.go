@@ -1,4 +1,4 @@
-package capsvc
+package ssu
 
 import (
 	"net/http"
@@ -18,7 +18,7 @@ var capsvcTestConfig = Config{
 }
 
 func TestClient_prepareHttpRequest(t *testing.T) {
-	capsvc := NewCapSvcClient(capsvcTestConfig)
+	capsvc := NewSsuClient(capsvcTestConfig)
 	req, err := http.NewRequest("GET", "http://dummy", nil)
 	assert.NoError(t, err)
 
@@ -39,6 +39,6 @@ func TestClient_prepareHttpRequest(t *testing.T) {
 }
 
 func TestNewCapSvcClient(t *testing.T) {
-	capsvc := NewCapSvcClient(capsvcTestConfig)
+	capsvc := NewSsuClient(capsvcTestConfig)
 	assert.NotNil(t, capsvc)
 }

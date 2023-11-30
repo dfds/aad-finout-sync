@@ -54,8 +54,9 @@ type Config struct {
 		Enabled bool `json:"enable"`
 	}
 	Scheduler struct {
-		Frequency          string `json:"scheduleFrequency" default:"30m"`
-		EnableAzure2Finout bool   `json:"enableAzure2Finout"`
+		Frequency               string `json:"scheduleFrequency" default:"30m"`
+		EnableAzure2Finout      bool   `json:"enableAzure2Finout"`
+		EnableCostCentre2Finout bool   `json:"enableCostCentre2Finout"`
 	}
 }
 

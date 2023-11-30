@@ -7,8 +7,8 @@ import (
 
 	"github.com/joomcode/errorx"
 	"go.dfds.cloud/aad-finout-sync/internal/azure"
-	"go.dfds.cloud/aad-finout-sync/internal/capsvc"
 	"go.dfds.cloud/aad-finout-sync/internal/config"
+	"go.dfds.cloud/aad-finout-sync/internal/ssu"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
 	"go.uber.org/zap"
 )
@@ -23,8 +23,8 @@ func Capsvc2AadHandler(ctx context.Context) error {
 	}
 
 	groupsInAzure := make(map[string]*azure.Group)
-	capabilitiesByRootId := make(map[string]*capsvc.GetCapabilitiesResponseContextCapability)
-	client := capsvc.NewCapSvcClient(capsvc.Config{
+	capabilitiesByRootId := make(map[string]*ssu.GetCapabilitiesResponseContextCapability)
+	client := ssu.NewSsuClient(ssu.Config{
 		Host:         conf.CapSvc.Host,
 		TenantId:     conf.Azure.TenantId,
 		ClientId:     conf.CapSvc.ClientId,

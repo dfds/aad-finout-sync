@@ -1,4 +1,4 @@
-package capsvc
+package ssu
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"go.dfds.cloud/aad-finout-sync/internal/util"
@@ -39,7 +40,7 @@ func (c *Client) prepareHttpRequest(h *http.Request) error {
 }
 
 func (c *Client) GetCapabilities() ([]*GetCapabilitiesResponseContextCapability, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/system/legacy/aad-finout-sync", c.config.Host), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/system/legacy/aad-aws-sync", c.config.Host), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +68,42 @@ func (c *Client) GetCapabilities() ([]*GetCapabilitiesResponseContextCapability,
 	var payload []*GetCapabilitiesResponseContextCapability
 
 	err = json.Unmarshal(rawData, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return payload, nil
+}
+
+func (c *Client) GetCapabilityMetadata(id string) (map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/capabilities/%s/metadata", c.config.Host, id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.prepareHttpRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	preDeserialise, err := strconv.Unquote(string(buf))
+	if err != nil {
+		return nil, err
+	}
+
+	var payload map[string]interface{}
+
+	err = json.Unmarshal([]byte(preDeserialise), &payload)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +162,7 @@ func (c *Client) getNewToken() (*util.RefreshAuthResponse, error) {
 	return tokenResponse, nil
 }
 
-func NewCapSvcClient(conf Config) *Client {
+func NewSsuClient(conf Config) *Client {
 	payload := &Client{
 		httpClient: http.DefaultClient,
 		config:     conf,

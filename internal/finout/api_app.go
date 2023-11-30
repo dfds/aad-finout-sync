@@ -102,7 +102,6 @@ func (a *ApiApp) ListVirtualTags(ctx context.Context) (map[string]*ListVirtualTa
 
 	tags := make(map[string]*ListVirtualTagResponseTag)
 	for _, tag := range *payload {
-		fmt.Println(strings.ToLower(tag.Name))
 		tags[strings.ToLower(tag.Name)] = tag
 	}
 

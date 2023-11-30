@@ -1,4 +1,4 @@
-package capsvc
+package ssu
 
 import (
 	"errors"
