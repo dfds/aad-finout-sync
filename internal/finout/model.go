@@ -176,6 +176,28 @@ type QueryByViewRequest struct {
 	ViewId string `json:"viewId"`
 }
 
+type ListGroupsResponse struct {
+	Groups []ListGroupsResponseGroup `json:"groups"`
+}
+
+type ListGroupsResponseGroup struct {
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Color       interface{}   `json:"color"`
+	Description interface{}   `json:"description"`
+	Metadata    interface{}   `json:"metadata"`
+	Roles       []interface{} `json:"roles"`
+	Users       []struct {
+		ID                 string    `json:"id"`
+		Name               string    `json:"name"`
+		ProfilePictureURL  string    `json:"profilePictureUrl"`
+		Email              string    `json:"email"`
+		CreatedAt          time.Time `json:"createdAt"`
+		ActivatedForTenant bool      `json:"activatedForTenant"`
+	} `json:"users"`
+	ManagedBy string `json:"managedBy"`
+}
+
 // auth
 
 type VerifyMfaResponse struct {

@@ -40,9 +40,11 @@ type Config struct {
 		ClientSecret string `json:"clientSecret"`
 	} `json:"capSvc"`
 	Finout struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		MfaUrl   string `json:"mfaUrl"`
+		Username     string `json:"username"`
+		Password     string `json:"password"`
+		MfaUrl       string `json:"mfaUrl"`
+		ClientId     string `json:"clientId"`
+		ClientSecret string `json:"clientSecret"`
 	}
 	Log struct {
 		Level string `json:"level"`

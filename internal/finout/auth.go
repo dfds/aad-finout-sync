@@ -9,6 +9,7 @@ import (
 	"go.dfds.cloud/aad-finout-sync/internal/util"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -47,6 +48,10 @@ func AuthClientSecretMethod(conf Config) *AuthClientSecret {
 	return method
 }
 
+func (a *AuthUser) AcceptedEndpoint(val string) bool {
+	return strings.Contains(val, AUTH_API_ENDPOINT)
+}
+
 func (a *AuthUser) PrepareHttpRequest(h *http.Request) error {
 	if a.tokenClient.Token.IsExpired() {
 		err := a.Refresh()
@@ -62,9 +67,6 @@ func (a *AuthUser) PrepareHttpRequest(h *http.Request) error {
 
 func (a *AuthUser) Refresh() error {
 	err := a.tokenClient.RefreshAuth()
-
-	fmt.Println(a.tokenClient.Token.GetToken())
-
 	return err
 }
 
@@ -205,4 +207,8 @@ func (a *AuthClientSecret) PrepareHttpRequest(h *http.Request) error {
 
 func (a *AuthClientSecret) Refresh() error {
 	return nil
+}
+
+func (a *AuthClientSecret) AcceptedEndpoint(val string) bool {
+	return strings.Contains(val, APP_API_ENDPOINT)
 }
