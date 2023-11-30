@@ -198,6 +198,37 @@ type ListGroupsResponseGroup struct {
 	ManagedBy string `json:"managedBy"`
 }
 
+type CreateGroupResponse struct {
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Color       interface{}   `json:"color"`
+	Description string        `json:"description"`
+	Metadata    string        `json:"metadata"`
+	Roles       []interface{} `json:"roles"`
+	Users       []interface{} `json:"users"`
+	ManagedBy   string        `json:"managedBy"`
+}
+
+type CreateGroupRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Metadata    string `json:"metadata"`
+}
+
+type AddUsersToGroupRequest struct {
+	UserIds []string `json:"userIds"`
+}
+
+type AddRolesToGroupRequest struct {
+	RoleIds []string `json:"roleIds"`
+}
+
+type UpdateGroupRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Metadata    string `json:"metadata"`
+}
+
 // auth
 
 type VerifyMfaResponse struct {
