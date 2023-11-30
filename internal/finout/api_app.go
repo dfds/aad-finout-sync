@@ -14,7 +14,7 @@ type ApiApp struct {
 }
 
 func (a *ApiApp) UpdateAccountDataAccessForGroups(ctx context.Context, accountId string, requestData UpdateAccountDataAccessForGroupsRequest) (*UpdateAccountDataAccessForGroupsResponse, error) {
-	url := fmt.Sprintf("%s/account-service/account/%s", AUTH_API_ENDPOINT, accountId)
+	url := fmt.Sprintf("%s/account-service/account/%s", APP_API_ENDPOINT, accountId)
 
 	serialisedPayload, err := json.Marshal(requestData)
 	if err != nil {
@@ -22,6 +22,34 @@ func (a *ApiApp) UpdateAccountDataAccessForGroups(ctx context.Context, accountId
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(serialisedPayload))
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.client.prepareHttpRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	rf := NewRequestFuncs()
+	rf.PostResponse = func(req *http.Request, resp *http.Response) error {
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("response returned unexpected status code: %d", resp.StatusCode)
+		}
+		return nil
+	}
+	payload, err := DoRequest[UpdateAccountDataAccessForGroupsResponse](a.client, req, rf)
+	if err != nil {
+		return nil, err
+	}
+
+	return payload, nil
+}
+
+func (a *ApiApp) GetAccountData(ctx context.Context, accountId string) (*UpdateAccountDataAccessForGroupsResponse, error) {
+	url := fmt.Sprintf("%s/account-service/account/%s", APP_API_ENDPOINT, accountId)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
