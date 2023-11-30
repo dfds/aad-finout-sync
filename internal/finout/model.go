@@ -229,6 +229,53 @@ type UpdateGroupRequest struct {
 	Metadata    string `json:"metadata"`
 }
 
+type UpdateAccountDataAccessForGroupsRequestGroupConfig struct {
+	DataAccessEnabled bool `json:"dataAccessEnabled"`
+	Filters           struct {
+		CostCenter string   `json:"costCenter"`
+		Key        string   `json:"key"`
+		Operator   string   `json:"operator"`
+		Value      []string `json:"value"`
+		Type       string   `json:"type"`
+	} `json:"filters"`
+}
+
+type UpdateAccountDataAccessForGroupsRequest struct {
+	GroupsConfig map[string]UpdateAccountDataAccessForGroupsRequestGroupConfig `json:"groupsConfig"`
+}
+
+type UpdateAccountDataAccessForGroupsResponse struct {
+	AccountId string `json:"accountId"`
+	Name      string `json:"name"`
+	PayerId   string `json:"payerId"`
+	Plan      struct {
+		Type             string    `json:"type"`
+		EndDate          time.Time `json:"endDate"`
+		UpgradeRequested bool      `json:"upgradeRequested"`
+	} `json:"plan"`
+	Configuration struct {
+		IsCostGuardEnabled bool `json:"isCostGuardEnabled"`
+	} `json:"configuration"`
+	CreatedAt                   string `json:"createdAt"`
+	UpdatedAt                   string `json:"updatedAt"`
+	DefaultContextId            string `json:"defaultContextId"`
+	LatestCompletedRunTimestamp int64  `json:"latestCompletedRunTimestamp"`
+	DataLocation                struct {
+		Bucket string `json:"bucket"`
+		Path   string `json:"path"`
+	} `json:"dataLocation"`
+	SignTermsAndConditions struct {
+		ApprovedAt string `json:"approvedAt"`
+		ApprovedBy string `json:"approvedBy"`
+	} `json:"signTermsAndConditions"`
+	SignCostOptimizerTermsAndConditions struct {
+		ApprovedAt time.Time `json:"approvedAt"`
+		ApprovedBy string    `json:"approvedBy"`
+	} `json:"signCostOptimizerTermsAndConditions"`
+	GroupsConfig map[string]UpdateAccountDataAccessForGroupsRequestGroupConfig `json:"groupsConfig"`
+	Id           string                                                        `json:"id"`
+}
+
 // auth
 
 type VerifyMfaResponse struct {
