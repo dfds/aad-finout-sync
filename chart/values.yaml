@@ -1,0 +1,70 @@
+# Default values for aad-finout-sync.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+managedByHelm: true
+environment: "develop"
+
+image:
+  repository: dfdsdk/aadfinoutsync
+  pullPolicy: Always
+  tag: "latest"
+
+app:
+  config:
+    secretRef: aad-finout-sync
+
+  environment:
+    - name: GIN_MODE
+      value: release
+    - name: AFS_LOG_LEVEL
+      value: info
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  awsRoleArn: ""
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 9090
+  metricsPort: 8080
+  scrapeMetrics: true
+
+resources:
+  requests:
+    memory: "50Mi"
+    cpu: "50m"
+  limits:
+    memory: "200Mi"
+    cpu: "200m"
+
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
