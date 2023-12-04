@@ -60,6 +60,11 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 		return err
 	}
 
+	capabilityTag, exists := tags["capability"]
+	if !exists {
+		return VirtualTagDoesNotExist.New(VirtualTagDoesNotExistMsg)
+	}
+
 	mappings, err := getMappings()
 	if err != nil {
 		util.Logger.Warn("No manual mappings found, using default values", zap.Error(err))
@@ -78,7 +83,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 					To: v,
 					Filters: finout.CreateVirtualTagRequestRuleFilter{
 						CostCenter: "virtualTag",
-						Key:        "52c02d7e-093a-42b7-bf06-eb13050a8687", //id of capability virtual tag, retrieve this dynamically later
+						Key:        capabilityTag.ID,
 						Type:       "virtual_tag",
 						Operator:   "oneOf",
 						Value:      []string{k},
@@ -126,7 +131,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 					To: v,
 					Filters: finout.UpdateVirtualTagRequestRuleFilter{
 						CostCenter: "virtualTag",
-						Key:        "52c02d7e-093a-42b7-bf06-eb13050a8687", //id of capability virtual tag, retrieve this dynamically later
+						Key:        capabilityTag.ID,
 						Type:       "virtual_tag",
 						Operator:   "oneOf",
 						Value:      []string{k},

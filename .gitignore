@@ -4,3 +4,4 @@ internal/test/testdata.json
 .vscode
 cover.out
 build
+mapping.json
