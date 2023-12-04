@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
 	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/handler"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
+
+	configUtils "go.dfds.cloud/utils/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -46,11 +49,11 @@ var jobSuccessfulCount *prometheus.GaugeVec = promauto.NewGaugeVec(prometheus.Ga
 // Orchestrator
 // Used for managing long-lived fully fledged sync jobs
 type Orchestrator struct {
-	aadToFinoutSyncStatus        *SyncStatus
-	costCentreToFinoutSyncStatus *SyncStatus
-	Jobs                         map[string]*Job
-	ctx                          context.Context
-	wg                           *sync.WaitGroup
+	status     map[string]*SyncStatus
+	scheduling map[string]*Schedule
+	Jobs       map[string]*Job
+	ctx        context.Context
+	wg         *sync.WaitGroup
 }
 
 type SyncStatus struct {
@@ -70,47 +73,99 @@ func (s *SyncStatus) SetStatus(status bool) {
 	s.mu.Unlock()
 }
 
+type Schedule struct {
+	name         string
+	enabled      bool
+	interval     time.Duration
+	lastExecuted time.Time
+}
+
+func (s *Schedule) Enabled() bool {
+	return s.enabled
+}
+
+func (s *Schedule) Interval() time.Duration {
+	return s.interval
+}
+
+func (s *Schedule) LoadConfig() {
+	prefix := fmt.Sprintf("AFS_SCHEDULER_JOB_%s", strings.ToUpper(s.name))
+	configPath := fmt.Sprintf("%s_ENABLE", prefix)
+	s.enabled = configUtils.GetEnvBool(configPath, false)
+
+	configPath = fmt.Sprintf("%s_INTERVAL", prefix)
+	s.interval = parseDuration(configUtils.GetEnvValue(configPath, "1h"))
+
+	util.Logger.Info(fmt.Sprintf("Job schedule %s loaded with the following configuration: Enabled: %t, Interval(in seconds): %d", s.name, s.Enabled(), int64(s.Interval().Seconds())))
+}
+
+func (s *Schedule) TimeToRun() bool {
+	now := time.Now().Unix()
+	nextExecution := s.lastExecuted.Add(s.interval).Unix()
+	diff := nextExecution - now
+	if diff < 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func NewOrchestrator(ctx context.Context, wg *sync.WaitGroup) *Orchestrator {
 	return &Orchestrator{
-		aadToFinoutSyncStatus:        &SyncStatus{active: false},
-		costCentreToFinoutSyncStatus: &SyncStatus{active: false},
-		Jobs:                         map[string]*Job{},
-		ctx:                          ctx,
-		wg:                           wg,
+		Jobs:       map[string]*Job{},
+		scheduling: map[string]*Schedule{},
+		status:     map[string]*SyncStatus{},
+		ctx:        ctx,
+		wg:         wg,
+	}
+}
+
+func (o *Orchestrator) AddJob(job *Job, schedule *Schedule) {
+	o.status[job.Name] = &SyncStatus{active: false}
+	o.scheduling[job.Name] = schedule
+	job.context = o.ctx
+	job.wg = o.wg
+	job.Status = o.status[job.Name]
+	job.Schedule = schedule
+
+	schedule.name = job.Name
+	schedule.LoadConfig()
+	schedule.lastExecuted = time.Now().Add(-schedule.interval)
+
+	o.Jobs[job.Name] = job
+}
+
+func (o *Orchestrator) JobStatus(name string) *SyncStatus {
+	return o.status[name]
+}
+
+func (o *Orchestrator) JobStatusProgress(name string) bool {
+	if status, exists := o.status[name]; !exists {
+		return false // ideally this should never happen
+	} else {
+		return status.InProgress()
 	}
 }
 
 func (o *Orchestrator) Init(conf config.Config) {
-	o.Jobs[AzureAdToFinoutName] = &Job{
-		Name:            AzureAdToFinoutName,
-		Status:          o.aadToFinoutSyncStatus,
-		context:         o.ctx,
-		wg:              o.wg,
-		handler:         handler.Azure2FinoutHandler,
-		ScheduleEnabled: conf.Scheduler.EnableAzure2Finout,
-	}
+	o.AddJob(&Job{
+		Name:    AzureAdToFinoutName,
+		handler: handler.Azure2FinoutHandler,
+	}, &Schedule{})
 
-	o.Jobs[CostCentreToFinoutName] = &Job{
-		Name:            CostCentreToFinoutName,
-		Status:          o.costCentreToFinoutSyncStatus,
-		context:         o.ctx,
-		wg:              o.wg,
-		handler:         handler.CostCentre2FinoutHandler,
-		ScheduleEnabled: conf.Scheduler.EnableCostCentre2Finout,
-	}
-}
-
-func (o *Orchestrator) AzureToFinoutSyncStatusProgress() bool {
-	return o.aadToFinoutSyncStatus.InProgress()
+	o.AddJob(&Job{
+		Name:    CostCentreToFinoutName,
+		handler: handler.CostCentre2FinoutHandler,
+	}, &Schedule{})
 }
 
 type Job struct {
-	Name            string
-	Status          *SyncStatus
-	context         context.Context
-	handler         func(ctx context.Context) error
-	wg              *sync.WaitGroup
-	ScheduleEnabled bool
+	Name     string
+	Status   *SyncStatus
+	context  context.Context
+	handler  func(ctx context.Context) error
+	wg       *sync.WaitGroup
+	Schedule *Schedule
 }
 
 func (j *Job) Run() {
@@ -118,6 +173,7 @@ func (j *Job) Run() {
 		util.Logger.Warn("Can't start Job because Job is already in progress.", zap.String("jobName", j.Name))
 		return
 	}
+	j.Schedule.lastExecuted = time.Now()
 	j.Status.SetStatus(true)
 	j.wg.Add(1)
 	currentJobsGauge.Inc()
@@ -155,4 +211,12 @@ func fakeJobGen(ctx context.Context, msg string, jobName string) {
 			time.Sleep(time.Second * time.Duration(sleepInSecs))
 		}
 	}
+}
+
+func parseDuration(val string) time.Duration {
+	duration, err := time.ParseDuration(val)
+	if err != nil {
+		panic(err) // ideally this should never happen
+	}
+	return duration
 }

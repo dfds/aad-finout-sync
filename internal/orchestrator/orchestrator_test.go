@@ -41,11 +41,6 @@ func TestNewOrchestrator(t *testing.T) {
 	assert.NotNil(t, orc)
 }
 
-func TestOrchestrator_AzureToFinoutSyncStatusProgress(t *testing.T) {
-	orc := NewOrchestrator(context.Background(), &sync.WaitGroup{})
-	assert.False(t, orc.AzureToFinoutSyncStatusProgress())
-}
-
 func TestOrchestrator_Init(t *testing.T) {
 	orc := NewOrchestrator(context.Background(), &sync.WaitGroup{})
 	orc.Init(config.Config{})

@@ -23,6 +23,7 @@ require (
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.16.2
+	go.dfds.cloud/utils v0.1.5
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
 	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d

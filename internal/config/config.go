@@ -60,7 +60,7 @@ type Config struct {
 	}
 }
 
-const APP_CONF_PREFIX = "AAS"
+const APP_CONF_PREFIX = "AFS"
 
 func LoadConfig() (Config, error) {
 	var conf Config

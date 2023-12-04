@@ -166,22 +166,19 @@ func main() {
 	backgroundJobWg := &sync.WaitGroup{}
 	orc := orchestrator.NewOrchestrator(ctx, backgroundJobWg)
 	orc.Init(conf)
+
 	// Orchestrator goroutine; Handles scheduling jobs
 	go func() {
 		util.Logger.Info("Initialising Orchestrator")
-		for _, job := range orc.Jobs {
-			_, err := s.Every(conf.Scheduler.Frequency).DoWithJobDetails(func(j *orchestrator.Job, c gocron.Job) {
-				// If conf flag is set to not schedule job, do not do it!
-				if j.ScheduleEnabled {
-					j.Run()
+		for {
+			//util.Logger.Debug("Checking if jobs need to be started")
+			for _, job := range orc.Jobs {
+				if job.Schedule.Enabled() && job.Schedule.TimeToRun() {
+					job.Run()
 				}
-			}, job)
-
-			if err != nil {
-				log.Fatal(err)
 			}
+			time.Sleep(1 * time.Second)
 		}
-		s.StartBlocking()
 	}()
 
 	// Profiling endpoint
