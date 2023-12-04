@@ -2,11 +2,14 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/finout"
 	"go.dfds.cloud/aad-finout-sync/internal/ssu"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
+	"go.uber.org/zap"
+	"os"
 )
 
 const CostCentreToFinoutName = "costCenterToFinout"
@@ -57,6 +60,14 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 		return err
 	}
 
+	mappings, err := getMappings()
+	if err != nil {
+		util.Logger.Warn("No manual mappings found, using default values", zap.Error(err))
+		mappings = &dataMappings{
+			AwsAccountAlias2CostCentre: []dataMappingsAwsAccountAlias2CostCentre{},
+		}
+	}
+
 	if tag, exists := tags[tagKey]; !exists {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' doesn't exist, creating", tagKey))
 		var rules []finout.CreateVirtualTagRequestRule
@@ -74,6 +85,19 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 					},
 				})
 			}
+		}
+
+		for _, mapping := range mappings.AwsAccountAlias2CostCentre {
+			rules = append(rules, finout.CreateVirtualTagRequestRule{
+				To: mapping.CostCentre,
+				Filters: finout.CreateVirtualTagRequestRuleFilter{
+					CostCenter: "amazon-cur",
+					Key:        "aws_account_name",
+					Type:       "tag",
+					Operator:   "oneOf",
+					Value:      []string{mapping.Alias},
+				},
+			})
 		}
 
 		virtualTagRequest := finout.CreateVirtualTagRequest{
@@ -111,6 +135,19 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 			}
 		}
 
+		for _, mapping := range mappings.AwsAccountAlias2CostCentre {
+			rules = append(rules, finout.UpdateVirtualTagRequestRule{
+				To: mapping.CostCentre,
+				Filters: finout.UpdateVirtualTagRequestRuleFilter{
+					CostCenter: "amazon-cur",
+					Key:        "aws_account_name",
+					Type:       "tag",
+					Operator:   "oneOf",
+					Value:      []string{mapping.Alias},
+				},
+			})
+		}
+
 		virtualTagUpdateRequest := finout.UpdateVirtualTagRequest{
 			Rules:     rules,
 			Category:  "Project",
@@ -129,4 +166,29 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+type dataMappings struct {
+	AwsAccountAlias2CostCentre []dataMappingsAwsAccountAlias2CostCentre `json:"awsAccountAlias2CostCentre"`
+}
+
+type dataMappingsAwsAccountAlias2CostCentre struct {
+	Alias      string `json:"alias"`
+	CostCentre string `json:"costCentre"`
+}
+
+func getMappings() (*dataMappings, error) {
+	bytes, err := os.ReadFile("mapping.json")
+	if err != nil {
+		return nil, err
+	}
+
+	var payload *dataMappings
+
+	err = json.Unmarshal(bytes, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return payload, nil
 }
