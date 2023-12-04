@@ -13,6 +13,7 @@ image:
 
 app:
   config:
+    mappingConfigMapRef: afs-mapping
     secretRef: aad-finout-sync
 
   environment:

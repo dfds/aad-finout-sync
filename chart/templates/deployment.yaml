@@ -61,3 +61,9 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - configMap:
+            name: {{ .Values.app.config.mappingConfigMapRef }}
+            items:
+              key: mapping.json
+              path: /app/mapping.json
