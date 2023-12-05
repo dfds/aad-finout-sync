@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"go.dfds.cloud/aad-finout-sync/internal/handler"
 	"log"
 	"net/http"
 	"os"
@@ -13,18 +14,18 @@ import (
 	"go.uber.org/zap"
 
 	"go.dfds.cloud/aad-finout-sync/internal/middleware"
+	"go.dfds.cloud/orchestrator"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	_ "go.dfds.cloud/aad-finout-sync/cmd/orchestrator/docs"
-	"go.dfds.cloud/aad-finout-sync/internal/orchestrator"
+	//"go.dfds.cloud/aad-finout-sync/internal/orchestrator"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
 )
 
@@ -152,10 +153,10 @@ func main() {
 	util.InitializeLogger()
 	defer util.Logger.Sync()
 
-	conf, err := config.LoadConfig()
-	if err != nil {
-		log.Fatal("Unable to load app config", err)
-	}
+	//conf, err := config.LoadConfig()
+	//if err != nil {
+	//	log.Fatal("Unable to load app config", err)
+	//}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -165,21 +166,14 @@ func main() {
 
 	backgroundJobWg := &sync.WaitGroup{}
 	orc := orchestrator.NewOrchestrator(ctx, backgroundJobWg)
-	orc.Init(conf)
+	orc.Init(util.Logger)
+
+	configPrefix := "AFS_SCHEDULER_JOB"
+	orc.AddJob(configPrefix, orchestrator.NewJob("aadToFinout", handler.Azure2FinoutHandler), &orchestrator.Schedule{})
+	orc.AddJob(configPrefix, orchestrator.NewJob("costCentreToFinout", handler.CostCentre2FinoutHandler), &orchestrator.Schedule{})
 
 	// Orchestrator goroutine; Handles scheduling jobs
-	go func() {
-		util.Logger.Info("Initialising Orchestrator")
-		for {
-			//util.Logger.Debug("Checking if jobs need to be started")
-			for _, job := range orc.Jobs {
-				if job.Schedule.Enabled() && job.Schedule.TimeToRun() {
-					job.Run()
-				}
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
+	orc.Run()
 
 	// Profiling endpoint
 	go func() {

@@ -14,14 +14,14 @@ import (
 func TestJob_Run(t *testing.T) {
 	util.InitializeLogger()
 	j := &Job{
-		Name:    "dummy",
-		Status:  &SyncStatus{active: false},
-		context: context.Background(),
+		Name:     "dummy",
+		Status:   &SyncStatus{active: false},
+		Schedule: &Schedule{},
+		context:  context.Background(),
 		handler: func(ctx context.Context) error {
 			return nil
 		},
-		wg:              &sync.WaitGroup{},
-		ScheduleEnabled: true,
+		wg: &sync.WaitGroup{},
 	}
 
 	j.Run()
