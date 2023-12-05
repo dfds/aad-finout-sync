@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine AS build
+FROM golang:1.21-alpine AS build
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY vendor /app/vendor
 
 RUN go build -o /app/app /app/cmd/orchestrator/main.go
 
-FROM golang:1.19-alpine
+FROM golang:1.21-alpine
 
 COPY --from=build /app/app /app/app
 
