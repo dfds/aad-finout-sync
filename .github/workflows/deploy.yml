@@ -39,7 +39,7 @@ jobs:
         uses: azure/setup-helm@v3
       - name: 'Generate manifests with Helm'
         run: |
-         helm template --set managedByHelm=false prod chart -f k8s/values.yaml > k8s/deploy.yaml
+         helm template --set managedByHelm=false prod chart --namespace aadfinoutsync -f k8s/values.yaml > k8s/deploy.yaml
       - name: 'Deploy manifests with Kubectl'
         env:
           KUBECONFIG: '/tmp/kubeconfig'
