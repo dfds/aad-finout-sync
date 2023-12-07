@@ -1,3 +1,4 @@
+namespace: aadfinoutsync
 app:
   config:
     secretRef: finout-config
