@@ -45,4 +45,4 @@ jobs:
           KUBECONFIG: '/tmp/kubeconfig'
           NAMESPACE: 'aadfinoutsync'
         run: |
-          kubectl apply -f k8s/deploy.yaml
+          kubectl apply -f k8s/deploy.yaml -n aadfinoutsync
