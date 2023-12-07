@@ -62,8 +62,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
-        - configMap:
+        - name: config
+          configMap:
             name: {{ .Values.app.config.mappingConfigMapRef }}
             items:
-              key: mapping.json
-              path: /app/mapping.json
+              - key: mapping.json
+                path: /app/mapping.json
