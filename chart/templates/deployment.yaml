@@ -67,4 +67,4 @@ spec:
             name: {{ .Values.app.config.mappingConfigMapRef }}
             items:
               - key: mapping.json
-                path: /app/mapping.json
+                path: app/mapping.json
