@@ -27,15 +27,6 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v3
-      - name: Replace tokens in k8s manifests
-        uses: cschleiden/replace-tokens@v1.1
-        with:
-          tokenPrefix: '$('
-          tokenSuffix: ')'
-          files: '["k8s/*.yml"]'
-        env:
-          kubernetes-namespace: 'aadfinoutsync'
-          aws-account-id: ${{secrets.EXECUTION_ROLE_ACCOUNT_ID}}
       - run: 'echo "$KUBECONFIG" > /tmp/kubeconfig'
         shell: bash
         env:
@@ -44,9 +35,14 @@ jobs:
 #        with:
 #          version: '0.0.0' # default is latest stable
         id: install
+      - name: 'Install Helm'
+        uses: azure/setup-helm@v3
+      - name: 'Generate manifests with Helm'
+        run: |
+         helm template --set managedByHelm=false prod chart -f k8s/values.yaml > k8s/deploy.yaml
       - name: 'Deploy manifests with Kubectl'
         env:
           KUBECONFIG: '/tmp/kubeconfig'
           NAMESPACE: 'aadfinoutsync'
         run: |
-          kubectl apply -f k8s
+          kubectl apply -f k8s/deploy.yaml
