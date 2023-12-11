@@ -49,6 +49,10 @@ spec:
               containerPort: {{ .Values.service.metricsPort }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/mapping.json
+              subPath: mapping.json
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -67,4 +71,4 @@ spec:
             name: {{ .Values.app.config.mappingConfigMapRef }}
             items:
               - key: mapping.json
-                path: app/mapping.json
+                path: mapping.json
