@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'k8s/**'
+      - 'chart/**'
       - '.github/workflows/deploy.yml'
     branches:
       - "main"
