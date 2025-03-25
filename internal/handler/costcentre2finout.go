@@ -111,8 +111,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 				Value: "Untagged",
 			},
 			Rules: rules,
-			//Category: "Project",
-			Name: tagKey,
+			Name:  tagKey,
 		}
 		_, err := finoutClientApp.ApiApp().CreateVirtualTag(ctx, virtualTagRequest)
 		if err != nil {
@@ -152,8 +151,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 		}
 
 		virtualTagUpdateRequest := finout.UpdateVirtualTagRequest{
-			Rules: rules,
-			//Category:  "Project",
+			Rules:     rules,
 			Endpoints: []string{},
 			Name:      tagKey,
 			Default: finout.CreateVirtualTagRequestDefault{
