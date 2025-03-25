@@ -46,12 +46,12 @@ type CreateVirtualTagResponseRuleFilter struct {
 }
 
 type CreateVirtualTagRequest struct {
-	Default   CreateVirtualTagRequestDefault `json:"default"`
-	Rules     []CreateVirtualTagRequestRule  `json:"rules"`
-	Category  string                         `json:"category"`
-	Name      string                         `json:"name"`
-	UpdatedBy string                         `json:"updatedBy"`
-	CreatedBy string                         `json:"createdBy"`
+	Default CreateVirtualTagRequestDefault `json:"default"`
+	Rules   []CreateVirtualTagRequestRule  `json:"rules"`
+	//Category  string                         `json:"category"`
+	Name      string `json:"name"`
+	UpdatedBy string `json:"updatedBy"`
+	CreatedBy string `json:"createdBy"`
 }
 
 type CreateVirtualTagRequestDefault struct {
@@ -73,10 +73,10 @@ type CreateVirtualTagRequestRuleFilter struct {
 }
 
 type UpdateVirtualTagRequest struct {
-	Rules     []UpdateVirtualTagRequestRule `json:"rules"`
-	Category  string                        `json:"category"`
-	Endpoints []string                      `json:"endpoints"`
-	Name      string                        `json:"name"`
+	Rules []UpdateVirtualTagRequestRule `json:"rules"`
+	//Category  string                        `json:"category"`
+	Endpoints []string `json:"endpoints"`
+	Name      string   `json:"name"`
 	//UpdatedBy string                         `json:"updatedBy"`
 	Default CreateVirtualTagRequestDefault `json:"default"`
 }

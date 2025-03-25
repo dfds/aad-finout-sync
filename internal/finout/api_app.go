@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -164,6 +165,11 @@ func (a *ApiApp) UpdateVirtualTag(ctx context.Context, requestPayload UpdateVirt
 	rf := NewRequestFuncs()
 	rf.PostResponse = func(req *http.Request, resp *http.Response) error {
 		if resp.StatusCode != 200 {
+			buf, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(buf))
 			return fmt.Errorf("response returned unexpected status code: %d", resp.StatusCode)
 		}
 		return nil
