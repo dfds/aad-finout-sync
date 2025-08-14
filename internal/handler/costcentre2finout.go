@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/finout"
 	"go.dfds.cloud/aad-finout-sync/internal/ssu"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
 	"go.uber.org/zap"
-	"os"
 )
 
 const CostCentreToFinoutName = "costCenterToFinout"
@@ -120,40 +121,66 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 	} else {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' exists, updating", tagKey))
 
-		var rules []finout.UpdateVirtualTagRequestRule
+		var rules []*finout.UpdateVirtualTagRequestRule
+
+		var ccRuleMapForCapability = make(map[string]*finout.UpdateVirtualTagRequestRule)
+		var ccRuleMapForAwsAccount = make(map[string]*finout.UpdateVirtualTagRequestRule)
 
 		for k, v := range capsTag {
 			if v != "" {
-				rules = append(rules, finout.UpdateVirtualTagRequestRule{
-					To: v,
-					Filters: finout.UpdateVirtualTagRequestRuleFilter{
+				if _, ok := ccRuleMapForCapability[v]; !ok {
+					ccRuleMapForCapability[v] = &finout.UpdateVirtualTagRequestRule{}
+					rule := ccRuleMapForCapability[v]
+					rule.To = v
+					rule.Type = "string"
+					rule.Filters = finout.UpdateVirtualTagRequestRuleFilter{
 						CostCenter: "virtualTag",
 						Key:        capabilityTag.ID,
 						Type:       "virtual_tag",
 						Operator:   "oneOf",
-						Value:      []string{k},
-					},
-				})
+						Value:      []string{},
+					}
+				}
+
+				rule := ccRuleMapForCapability[v]
+				rule.Filters.Value = append(rule.Filters.Value, k)
+				//ccRuleMapForCapability[v] = rule
 			}
 		}
 
 		for _, mapping := range mappings.AwsAccountAlias2CostCentre {
-			rules = append(rules, finout.UpdateVirtualTagRequestRule{
-				To: mapping.CostCentre,
-				Filters: finout.UpdateVirtualTagRequestRuleFilter{
+			if _, ok := ccRuleMapForAwsAccount[mapping.CostCentre]; !ok {
+				ccRuleMapForAwsAccount[mapping.CostCentre] = &finout.UpdateVirtualTagRequestRule{}
+				rule := ccRuleMapForAwsAccount[mapping.CostCentre]
+				rule.To = mapping.CostCentre
+				rule.Type = "string"
+				rule.Filters = finout.UpdateVirtualTagRequestRuleFilter{
 					CostCenter: "amazon-cur",
 					Key:        "aws_account_name",
 					Type:       "tag",
 					Operator:   "oneOf",
-					Value:      []string{mapping.Alias},
-				},
-			})
+					Value:      []string{},
+				}
+			}
+
+			rule := ccRuleMapForAwsAccount[mapping.CostCentre]
+			rule.Filters.Value = append(rule.Filters.Value, mapping.Alias)
+			//ccRuleMapForCapability[mapping.CostCentre] = rule
+
+		}
+
+		for _, rule := range ccRuleMapForCapability {
+			rules = append(rules, rule)
+		}
+		for _, rule := range ccRuleMapForAwsAccount {
+			rules = append(rules, rule)
 		}
 
 		virtualTagUpdateRequest := finout.UpdateVirtualTagRequest{
-			Rules:     rules,
-			Endpoints: []string{},
-			Name:      tagKey,
+			Rules:       rules,
+			Endpoints:   []string{},
+			Name:        tagKey,
+			Allocations: []string{},
 			Default: finout.CreateVirtualTagRequestDefault{
 				Type:  "string",
 				Value: "Untagged",
