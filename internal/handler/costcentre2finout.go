@@ -15,7 +15,7 @@ import (
 
 const CostCentreToFinoutName = "costCenterToFinout"
 
-const tagKey = "dfds.cost.centre"
+const tagKey = "dfds.cost.centre.test"
 const author = "aad-finout-sync"
 
 func CostCentre2FinoutHandler(ctx context.Context) error {
@@ -76,34 +76,56 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 
 	if tag, exists := tags[tagKey]; !exists {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' doesn't exist, creating", tagKey))
-		var rules []finout.CreateVirtualTagRequestRule
+		var rules []*finout.CreateVirtualTagRequestRule
+
+		var ccRuleMapForCapability = make(map[string]*finout.CreateVirtualTagRequestRule)
+		var ccRuleMapForAwsAccount = make(map[string]*finout.CreateVirtualTagRequestRule)
 
 		for k, v := range capsTag {
 			if v != "" {
-				rules = append(rules, finout.CreateVirtualTagRequestRule{
-					To: v,
-					Filters: finout.CreateVirtualTagRequestRuleFilter{
+				if _, ok := ccRuleMapForCapability[v]; !ok {
+					ccRuleMapForCapability[v] = &finout.CreateVirtualTagRequestRule{}
+					rule := ccRuleMapForCapability[v]
+					rule.To = v
+					rule.Type = "string"
+					rule.Filters = finout.CreateVirtualTagRequestRuleFilter{
 						CostCenter: "virtualTag",
 						Key:        capabilityTag.ID,
 						Type:       "virtual_tag",
 						Operator:   "oneOf",
-						Value:      []string{k},
-					},
-				})
+						Value:      []string{},
+					}
+				}
+
+				rule := ccRuleMapForCapability[v]
+				rule.Filters.Value = append(rule.Filters.Value, k)
 			}
 		}
 
 		for _, mapping := range mappings.AwsAccountAlias2CostCentre {
-			rules = append(rules, finout.CreateVirtualTagRequestRule{
-				To: mapping.CostCentre,
-				Filters: finout.CreateVirtualTagRequestRuleFilter{
+			if _, ok := ccRuleMapForAwsAccount[mapping.CostCentre]; !ok {
+				ccRuleMapForAwsAccount[mapping.CostCentre] = &finout.CreateVirtualTagRequestRule{}
+				rule := ccRuleMapForAwsAccount[mapping.CostCentre]
+				rule.To = mapping.CostCentre
+				rule.Type = "string"
+				rule.Filters = finout.CreateVirtualTagRequestRuleFilter{
 					CostCenter: "amazon-cur",
 					Key:        "aws_account_name",
 					Type:       "tag",
 					Operator:   "oneOf",
-					Value:      []string{mapping.Alias},
-				},
-			})
+					Value:      []string{},
+				}
+			}
+
+			rule := ccRuleMapForAwsAccount[mapping.CostCentre]
+			rule.Filters.Value = append(rule.Filters.Value, mapping.Alias)
+		}
+
+		for _, rule := range ccRuleMapForCapability {
+			rules = append(rules, rule)
+		}
+		for _, rule := range ccRuleMapForAwsAccount {
+			rules = append(rules, rule)
 		}
 
 		virtualTagRequest := finout.CreateVirtualTagRequest{
