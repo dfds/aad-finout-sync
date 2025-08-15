@@ -98,7 +98,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 				}
 
 				rule := ccRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value, k)
+				rule.Filters.Value = append(rule.Filters.Value.([]interface{}), k)
 			}
 		}
 
@@ -118,7 +118,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 			}
 
 			rule := ccRuleMapForAwsAccount[mapping.CostCentre]
-			rule.Filters.Value = append(rule.Filters.Value, mapping.Alias)
+			rule.Filters.Value = append(rule.Filters.Value.([]interface{}), mapping.Alias)
 		}
 
 		for _, rule := range ccRuleMapForCapability {
@@ -165,8 +165,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 				}
 
 				rule := ccRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value, k)
-				//ccRuleMapForCapability[v] = rule
+				rule.Filters.Value = append(rule.Filters.Value.([]interface{}), k)
 			}
 		}
 
@@ -186,9 +185,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 			}
 
 			rule := ccRuleMapForAwsAccount[mapping.CostCentre]
-			rule.Filters.Value = append(rule.Filters.Value, mapping.Alias)
-			//ccRuleMapForCapability[mapping.CostCentre] = rule
-
+			rule.Filters.Value = append(rule.Filters.Value.([]interface{}), mapping.Alias)
 		}
 
 		for _, rule := range ccRuleMapForCapability {

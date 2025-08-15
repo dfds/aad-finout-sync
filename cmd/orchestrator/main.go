@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"go.dfds.cloud/aad-finout-sync/internal/handler"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"go.dfds.cloud/aad-finout-sync/internal/handler"
 
 	"go.uber.org/zap"
 
@@ -171,6 +172,7 @@ func main() {
 	configPrefix := "AFS_SCHEDULER_JOB"
 	orc.AddJob(configPrefix, orchestrator.NewJob("aadToFinout", handler.Azure2FinoutHandler), &orchestrator.Schedule{})
 	orc.AddJob(configPrefix, orchestrator.NewJob("costCentreToFinout", handler.CostCentre2FinoutHandler), &orchestrator.Schedule{})
+	orc.AddJob(configPrefix, orchestrator.NewJob("capabilityToFinout", handler.Capability2FinoutHandler), &orchestrator.Schedule{})
 
 	// Orchestrator goroutine; Handles scheduling jobs
 	orc.Run()

@@ -66,11 +66,12 @@ type CreateVirtualTagRequestRule struct {
 }
 
 type CreateVirtualTagRequestRuleFilter struct {
-	CostCenter string   `json:"costCenter"`
-	Key        string   `json:"key"`
-	Type       string   `json:"type"`
-	Operator   string   `json:"operator"`
-	Value      []string `json:"value"`
+	CostCenter string                              `json:"costCenter,omitempty"`
+	Key        string                              `json:"key,omitempty"`
+	Type       string                              `json:"type,omitempty"`
+	Operator   string                              `json:"operator,omitempty"`
+	Value      interface{}                         `json:"value,omitempty"`
+	Or         []CreateVirtualTagRequestRuleFilter `json:"OR,omitempty"`
 }
 
 type UpdateVirtualTagRequest struct {
@@ -91,12 +92,13 @@ type UpdateVirtualTagRequestRule struct {
 }
 
 type UpdateVirtualTagRequestRuleFilter struct {
-	CostCenter string   `json:"costCenter"`
-	Key        string   `json:"key"`
-	Type       string   `json:"type"`
-	Operator   string   `json:"operator"`
-	Value      []string `json:"value"`
-	Path       string   `json:"path,omitempty"`
+	CostCenter string                              `json:"costCenter,omitempty"`
+	Key        string                              `json:"key,omitempty"`
+	Type       string                              `json:"type,omitempty"`
+	Operator   string                              `json:"operator,omitempty"`
+	Value      interface{}                         `json:"value,omitempty"`
+	Path       string                              `json:"path,omitempty"`
+	Or         []UpdateVirtualTagRequestRuleFilter `json:"OR,omitempty"`
 }
 
 type UpdateVirtualTagResponse struct {
