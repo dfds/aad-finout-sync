@@ -15,7 +15,7 @@ import (
 
 const CostCentreToFinoutName = "costCenterToFinout"
 
-const tagKey = "dfds.cost.centre.test"
+const tagKey = "dfds.cost.centre"
 const author = "aad-finout-sync"
 
 func CostCentre2FinoutHandler(ctx context.Context) error {
@@ -98,7 +98,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 				}
 
 				rule := ccRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value.([]interface{}), k)
+				rule.Filters.Value = append(rule.Filters.Value.([]string), k)
 			}
 		}
 
@@ -165,7 +165,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 				}
 
 				rule := ccRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value.([]interface{}), k)
+				rule.Filters.Value = append(rule.Filters.Value.([]string), k)
 			}
 		}
 
@@ -185,7 +185,7 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 			}
 
 			rule := ccRuleMapForAwsAccount[mapping.CostCentre]
-			rule.Filters.Value = append(rule.Filters.Value.([]interface{}), mapping.Alias)
+			rule.Filters.Value = append(rule.Filters.Value.([]string), mapping.Alias)
 		}
 
 		for _, rule := range ccRuleMapForCapability {
