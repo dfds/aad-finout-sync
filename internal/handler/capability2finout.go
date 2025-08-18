@@ -10,7 +10,7 @@ import (
 	"go.dfds.cloud/aad-finout-sync/internal/util"
 )
 
-const capabilityTagKey = "capability.test"
+const capabilityTagKey = "capability"
 
 func Capability2FinoutHandler(ctx context.Context) error {
 	conf, err := config.LoadConfig()
