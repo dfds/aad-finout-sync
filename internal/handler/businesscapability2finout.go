@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.dfds.cloud/aad-finout-sync/internal/config"
 	"go.dfds.cloud/aad-finout-sync/internal/finout"
@@ -61,7 +62,7 @@ func BusinessCapability2FinoutHandler(ctx context.Context) error {
 		return VirtualTagDoesNotExist.New(VirtualTagDoesNotExistMsg)
 	}
 
-	if tag, exists := tags[businessCapabilityTagKey]; !exists {
+	if tag, exists := tags[strings.ToLower(businessCapabilityTagKey)]; !exists {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' doesn't exist, creating", businessCapabilityTagKey))
 		var rules []*finout.CreateVirtualTagRequestRule
 
