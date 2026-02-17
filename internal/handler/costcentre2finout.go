@@ -219,8 +219,9 @@ type dataMappings struct {
 }
 
 type dataMappingsAwsAccountAlias2CostCentre struct {
-	Alias      string `json:"alias"`
-	CostCentre string `json:"costCentre"`
+	Alias      string  `json:"alias"`
+	MappedName *string `json:"mappedName"`
+	CostCentre string  `json:"costCentre"`
 }
 
 func getMappings() (*dataMappings, error) {

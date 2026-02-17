@@ -174,6 +174,7 @@ func main() {
 	orc.AddJob(configPrefix, orchestrator.NewJob("costCentreToFinout", handler.CostCentre2FinoutHandler), &orchestrator.Schedule{})
 	orc.AddJob(configPrefix, orchestrator.NewJob("businessCapabilityToFinout", handler.BusinessCapability2FinoutHandler), &orchestrator.Schedule{})
 	orc.AddJob(configPrefix, orchestrator.NewJob("capabilityToFinout", handler.Capability2FinoutHandler), &orchestrator.Schedule{})
+	orc.AddJob(configPrefix, orchestrator.NewJob("capabilityAndLegacyAccountsToFinout", handler.CapabilityAndLegacyAccounts2FinoutHandler), &orchestrator.Schedule{})
 
 	// Orchestrator goroutine; Handles scheduling jobs
 	orc.Run()
