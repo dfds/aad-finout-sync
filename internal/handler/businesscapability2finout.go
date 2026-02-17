@@ -9,11 +9,18 @@ import (
 	"go.dfds.cloud/aad-finout-sync/internal/finout"
 	"go.dfds.cloud/aad-finout-sync/internal/ssu"
 	"go.dfds.cloud/aad-finout-sync/internal/util"
+	"go.uber.org/zap"
 )
 
 const businessCapabilityTagKey = "dfds.businessCapability"
 
-// BusinessCapability2FinoutHandler exports dfds.businessCapability tags to Finout
+// BusinessCapability2FinoutHandler exports dfds.businessCapability tags to Finout.
+// Rules are sourced from two places:
+//   - SSU metadata (dfds.businessCapability), filtered via the "capability & legacy accounts" virtual tag
+//   - mapping.json (TechnicalCapability2BusinessCapability), filtered via the "capability & legacy accounts" virtual tag
+//
+// SSU metadata takes priority: if a TechnicalCapability value from the JSON matches a capability
+// ID already covered by SSU metadata, the JSON entry is skipped.
 func BusinessCapability2FinoutHandler(ctx context.Context) error {
 	conf, err := config.LoadConfig()
 	if err != nil {
@@ -35,29 +42,44 @@ func BusinessCapability2FinoutHandler(ctx context.Context) error {
 		return err
 	}
 	util.Logger.Debug("Capabilities retrieved")
-	capsTag := make(map[string]string)
 
+	capsTag := make(map[string]string)
 	for _, capability := range caps {
 		metadata, err := ssuClient.GetCapabilityMetadata(capability.ID)
 		if err != nil {
 			return err
 		}
 
-		var businessCapability string = ""
+		var businessCapability string
 		if val, exists := metadata["dfds.businessCapability"]; exists {
 			businessCapability = val.(string)
 		}
 		capsTag[capability.ID] = businessCapability
 	}
-
 	util.Logger.Debug("Capability metadata retrieved")
+
+	coveredCapIDs := make(map[string]struct{})
+	for capID, bc := range capsTag {
+		if bc != "" {
+			coveredCapIDs[capID] = struct{}{}
+		}
+	}
+
+	mappings, err := getMappings()
+	if err != nil {
+		util.Logger.Warn("No manual mappings found, using default values", zap.Error(err))
+		mappings = &dataMappings{
+			AwsAccountAlias2CostCentre:             []dataMappingsAwsAccountAlias2CostCentre{},
+			TechnicalCapability2BusinessCapability: []dataMappingsTechnicalCapability2BusinessCapability{},
+		}
+	}
 
 	tags, err := finoutClientApp.ApiApp().ListVirtualTags(ctx)
 	if err != nil {
 		return err
 	}
 
-	capabilityTag, exists := tags["capability"]
+	capAndLegacyTag, exists := tags[strings.ToLower(capabilityAndLegacyAccountsTagKey)]
 	if !exists {
 		return VirtualTagDoesNotExist.New(VirtualTagDoesNotExistMsg)
 	}
@@ -66,30 +88,55 @@ func BusinessCapability2FinoutHandler(ctx context.Context) error {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' doesn't exist, creating", businessCapabilityTagKey))
 		var rules []*finout.CreateVirtualTagRequestRule
 
-		var bcRuleMapForCapability = make(map[string]*finout.CreateVirtualTagRequestRule)
-
-		for k, v := range capsTag {
-			if v != "" {
-				if _, ok := bcRuleMapForCapability[v]; !ok {
-					bcRuleMapForCapability[v] = &finout.CreateVirtualTagRequestRule{}
-					rule := bcRuleMapForCapability[v]
-					rule.To = v
-					rule.Type = "string"
-					rule.Filters = finout.CreateVirtualTagRequestRuleFilter{
-						CostCenter: "virtualTag",
-						Key:        capabilityTag.ID,
-						Type:       "virtual_tag",
-						Operator:   "oneOf",
-						Value:      []string{},
-					}
-				}
-
-				rule := bcRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value.([]string), k)
+		capabilityRuleMap := make(map[string]*finout.CreateVirtualTagRequestRule)
+		for capID, bc := range capsTag {
+			if bc == "" {
+				continue
 			}
+			if _, ok := capabilityRuleMap[bc]; !ok {
+				capabilityRuleMap[bc] = &finout.CreateVirtualTagRequestRule{}
+				rule := capabilityRuleMap[bc]
+				rule.To = bc
+				rule.Type = "string"
+				rule.Filters = finout.CreateVirtualTagRequestRuleFilter{
+					CostCenter: "virtualTag",
+					Key:        capAndLegacyTag.ID,
+					Type:       "virtual_tag",
+					Operator:   "oneOf",
+					Value:      []string{},
+				}
+			}
+			capabilityRuleMap[bc].Filters.Value = append(capabilityRuleMap[bc].Filters.Value.([]string), capID)
 		}
 
-		for _, rule := range bcRuleMapForCapability {
+		legacyRuleMap := make(map[string]*finout.CreateVirtualTagRequestRule)
+		for _, mapping := range mappings.TechnicalCapability2BusinessCapability {
+			if mapping.BusinessCapability == "" {
+				continue
+			}
+			if _, covered := coveredCapIDs[mapping.TechnicalCapability]; covered {
+				continue
+			}
+			if _, ok := legacyRuleMap[mapping.BusinessCapability]; !ok {
+				legacyRuleMap[mapping.BusinessCapability] = &finout.CreateVirtualTagRequestRule{}
+				rule := legacyRuleMap[mapping.BusinessCapability]
+				rule.To = mapping.BusinessCapability
+				rule.Type = "string"
+				rule.Filters = finout.CreateVirtualTagRequestRuleFilter{
+					CostCenter: "virtualTag",
+					Key:        capAndLegacyTag.ID,
+					Type:       "virtual_tag",
+					Operator:   "oneOf",
+					Value:      []string{},
+				}
+			}
+			legacyRuleMap[mapping.BusinessCapability].Filters.Value = append(legacyRuleMap[mapping.BusinessCapability].Filters.Value.([]string), mapping.TechnicalCapability)
+		}
+
+		for _, rule := range capabilityRuleMap {
+			rules = append(rules, rule)
+		}
+		for _, rule := range legacyRuleMap {
 			rules = append(rules, rule)
 		}
 
@@ -105,34 +152,60 @@ func BusinessCapability2FinoutHandler(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 	} else {
 		util.Logger.Info(fmt.Sprintf("Tag '%s' exists, updating", businessCapabilityTagKey))
-
 		var rules []*finout.UpdateVirtualTagRequestRule
-		var bcRuleMapForCapability = make(map[string]*finout.UpdateVirtualTagRequestRule)
 
-		for k, v := range capsTag {
-			if v != "" {
-				if _, ok := bcRuleMapForCapability[v]; !ok {
-					bcRuleMapForCapability[v] = &finout.UpdateVirtualTagRequestRule{}
-					rule := bcRuleMapForCapability[v]
-					rule.To = v
-					rule.Type = "string"
-					rule.Filters = finout.UpdateVirtualTagRequestRuleFilter{
-						CostCenter: "virtualTag",
-						Key:        capabilityTag.ID,
-						Type:       "virtual_tag",
-						Operator:   "oneOf",
-						Value:      []string{},
-					}
-				}
-
-				rule := bcRuleMapForCapability[v]
-				rule.Filters.Value = append(rule.Filters.Value.([]string), k)
+		capabilityRuleMap := make(map[string]*finout.UpdateVirtualTagRequestRule)
+		for capID, bc := range capsTag {
+			if bc == "" {
+				continue
 			}
+			if _, ok := capabilityRuleMap[bc]; !ok {
+				capabilityRuleMap[bc] = &finout.UpdateVirtualTagRequestRule{}
+				rule := capabilityRuleMap[bc]
+				rule.To = bc
+				rule.Type = "string"
+				rule.Filters = finout.UpdateVirtualTagRequestRuleFilter{
+					CostCenter: "virtualTag",
+					Key:        capAndLegacyTag.ID,
+					Type:       "virtual_tag",
+					Operator:   "oneOf",
+					Value:      []string{},
+				}
+			}
+			capabilityRuleMap[bc].Filters.Value = append(capabilityRuleMap[bc].Filters.Value.([]string), capID)
 		}
 
-		for _, rule := range bcRuleMapForCapability {
+		legacyRuleMap := make(map[string]*finout.UpdateVirtualTagRequestRule)
+		for _, mapping := range mappings.TechnicalCapability2BusinessCapability {
+			if mapping.BusinessCapability == "" {
+				continue
+			}
+			if _, covered := coveredCapIDs[mapping.TechnicalCapability]; covered {
+				continue
+			}
+			if _, ok := legacyRuleMap[mapping.BusinessCapability]; !ok {
+				legacyRuleMap[mapping.BusinessCapability] = &finout.UpdateVirtualTagRequestRule{}
+				rule := legacyRuleMap[mapping.BusinessCapability]
+				rule.To = mapping.BusinessCapability
+				rule.Type = "string"
+				rule.Filters = finout.UpdateVirtualTagRequestRuleFilter{
+					CostCenter: "virtualTag",
+					Key:        capAndLegacyTag.ID,
+					Type:       "virtual_tag",
+					Operator:   "oneOf",
+					Value:      []string{},
+				}
+			}
+			legacyRuleMap[mapping.BusinessCapability].Filters.Value = append(legacyRuleMap[mapping.BusinessCapability].Filters.Value.([]string), mapping.TechnicalCapability)
+		}
+
+		for _, rule := range capabilityRuleMap {
+			rules = append(rules, rule)
+		}
+		for _, rule := range legacyRuleMap {
 			rules = append(rules, rule)
 		}
 

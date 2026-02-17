@@ -215,13 +215,19 @@ func CostCentre2FinoutHandler(ctx context.Context) error {
 }
 
 type dataMappings struct {
-	AwsAccountAlias2CostCentre []dataMappingsAwsAccountAlias2CostCentre `json:"awsAccountAlias2CostCentre"`
+	AwsAccountAlias2CostCentre            []dataMappingsAwsAccountAlias2CostCentre            `json:"awsAccountAlias2CostCentre"`
+	TechnicalCapability2BusinessCapability []dataMappingsTechnicalCapability2BusinessCapability `json:"technicalCapability2BusinessCapability"`
 }
 
 type dataMappingsAwsAccountAlias2CostCentre struct {
 	Alias      string  `json:"alias"`
 	MappedName *string `json:"mappedName"`
 	CostCentre string  `json:"costCentre"`
+}
+
+type dataMappingsTechnicalCapability2BusinessCapability struct {
+	TechnicalCapability string `json:"technicalCapability"`
+	BusinessCapability  string `json:"businessCapability"`
 }
 
 func getMappings() (*dataMappings, error) {
