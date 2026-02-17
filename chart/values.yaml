@@ -9,7 +9,7 @@ environment: "develop"
 image:
   repository: dfdsdk/aadfinoutsync
   pullPolicy: Always
-  tag: "v0.0.9"
+  tag: "v0.0.10"
 
 app:
   config:
