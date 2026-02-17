@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const businessCapabilityTagKey = "dfds.businessCapability"
+const businessCapabilityTagKey = "Business Capability"
 
 // BusinessCapability2FinoutHandler exports dfds.businessCapability tags to Finout.
 // Rules are sourced from two places:
